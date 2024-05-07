@@ -1,0 +1,111 @@
+\documentclass[a4paper,
+               $if(lipics.anonymous)$anonymous,$endif$
+               UKenglish,
+               cleveref,
+               autoref,
+               thm-restate]{lipics-v2021}
+
+% if images are in a different directory
+$if(graphicspath)$
+\graphicspath{{$graphicspath$}}
+$endif$
+
+% the mandatory bibstyle
+\bibliographystyle{plainurl}
+
+\title{$title$}
+\titlerunning{$title-running$}
+
+$for(author)$
+\author{$author.name$}{$author.affiliation$}{$author.email$}{$author.orcid$}{$author.funding$}
+$endfor$
+
+$if(author-running)$
+\authorrunning{$author-running$}
+$else$
+\authorrunning{$for(author)$$author.name$$sep$, $endfor$}
+$endif$
+
+$if(copyright)$
+\Copyright{$copyright$} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+$else$
+\Copyright{$for(author)$$author.name$$sep$, $endfor$}
+$endif$
+
+
+$for(acm-cc-desc)$
+\ccsdesc[$if(it.level)$$it.level$$else$100$endif$]{$if(it.desc)$$it.desc$$else$$it$$endif$}
+$endfor$
+
+\keywords{$for(keyword)$$keyword$$sep$, $endfor$}
+
+\category{$lipics.category$} %optional, e.g. invited paper
+
+$for(related-version)$
+$if(related-version.url)$
+\relatedversiondetails[$if(related-version.text)$linktext={$text$},$endif$
+                       $if(related-version.cite)$cite={$related-version.cite$}$endif$]{$related-version.type$}{$related-version.url$} %linktext and cite are optional
+$else$
+\relatedversion{$related-version$} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
+$endif$
+$endfor$
+
+$for(supplement)$
+$if(supplement.url)$
+\supplementdetails[linktext={$supplement.text$},
+                  cite=$supplement.cite$,
+                  subcategory={$supplement.subcategory$},
+                  swhid={$supplement.swhid$}]{$supplement.type$}{$supplement.url$}
+$else$
+\supplement{$supplement$}
+$endif$
+$endfor$
+
+$for(funding)$
+\funding{$funding$}
+$endfor$
+
+$if(acknowledgements)$
+\acknowledgements{$acknowledgements$}
+$endif$
+
+$if(lipics.review-mode)$
+$else$
+\nolinenumbers
+$endif$
+
+$if(lipics.arxiv-mode)$
+\hideLIPIcs
+$endif$
+
+%Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\EventEditors{John Q. Open and Joan R. Access}
+\EventNoEds{2}
+\EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
+\EventShortTitle{CVIT 2016}
+\EventAcronym{CVIT}
+\EventYear{2016}
+\EventDate{December 24--27, 2016}
+\EventLocation{Little Whinging, United Kingdom}
+\EventLogo{}
+\SeriesVolume{42}
+\ArticleNo{23}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    $abstract$
+\end{abstract}
+
+$body$
+
+\bibliography{$bibliography$}
+
+\appendix
+
+$appendix$
+
+\end{document}
