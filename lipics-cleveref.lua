@@ -1,0 +1,23 @@
+-- Aliaume LOPEZ 2024
+--
+-- This file is a Lua script that correctly converts pandoc citations into
+-- cleveref instances when it detects that the given citation does not exist in
+-- the bibliography and is an actual label in the document.
+--
+-- The script should be run *before* pandoc-citeproc.
+--
+-- @citekey -> \cref{citekey}
+-- [@citekey1; @citekey2] -> \cref{citekey1,citekey2}
+--
+-- TODO:
+-- accumulate identifiers and names 
+--
+-- To every node, provide the latest id of a parent that
+-- has a specialised label.
+--
+-- theorem  
+--  ->
+--      ->
+--          -> 
+--
+-- 

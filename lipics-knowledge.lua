@@ -1,0 +1,7 @@
+-- Aliaume LOPEZ
+-- 2024
+--
+-- This file is a Lua script that correctly converts
+-- pandoc quotes into knowledge introductions and usage.
+--
+-- TODO:

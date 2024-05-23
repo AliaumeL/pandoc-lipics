@@ -35,6 +35,30 @@ abstract: |
 
 # Introduction
 
-We start by citing a paper [@DBLP:journals/corr/abs-1901-11196].
+## Theorems and proofs
+
+::: theorem
+### Optional Theorem title
+
+Theorem statement
+
+:::
+
+## Knowledges
+
+TODO.
+
+## Citations 
+
+We start by citing a paper [@DBLP:journals/cacm/Knuth74].
+
+We can also cite them like this @DBLP:journals/cacm/Knuth74. Which becomes a
+tiny bit more impressive using a lot of names such as
+@DBLP:conf/focs/HopcroftPV75.
+
+Note that we have the full power of the pandoc citation syntax. In particular
+we can [see @DBLP:journals/cacm/Knuth74; because @DBLP:conf/focs/HopcroftPV75
+has Theorem 1.6].
 
 # Main part 
+

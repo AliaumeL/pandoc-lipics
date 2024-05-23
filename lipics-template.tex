@@ -10,8 +10,20 @@ $if(graphicspath)$
 \graphicspath{{$graphicspath$}}
 $endif$
 
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 % the mandatory bibstyle
 \bibliographystyle{plainurl}
+
+% define a \citenum command
+% that only prints the number associated
+% to the citation **without brackets**
+% so \cite{foo} will print [1]
+% and \citenum{foo} will print 1
+% \newcommand{\citenum}[1]{\cite{#1}}
 
 \title{$title$}
 \titlerunning{$title-running$}
@@ -78,6 +90,28 @@ $if(lipics.arxiv-mode)$
 \hideLIPIcs
 $endif$
 
+$if(knowledges)$
+% we set the mode to paper if lipics.review-mode or lipics.final-mode are set
+% if lipics.arxiv-mode is set, we set the mode to electronic
+% otherwise we use the composition mode
+\usepackage[capitalise,noabbrev,nameinlink]{cleveref}
+\usepackage[cleveref,xcolor,hyperref,
+$if(lipics.review-mode)$paper$endif$
+$if(lipics.final-mode)$paper$endif$
+$if(lipics.arxiv-mode)$electronic$endif$
+$if(lipics.composition-mode)$composition$endif$
+]{knowledge}
+\knowledgeconfigure{notion}
+$endif$
+
+$for(knowledges)$
+% TODO: take knowledge options into account
+\knowledge{notion}
+$for(it.synonyms)$
+ | $if(it.scope)$$it.value$@$it.scope$$else$$it$$endif$
+$endfor$
+$endfor$
+
 %Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \EventEditors{John Q. Open and Joan R. Access}
 \EventNoEds{2}
@@ -100,12 +134,24 @@ $endif$
     $abstract$
 \end{abstract}
 
+$for(include-before)$
+$include-before$
+
+$endfor$
+
 $body$
 
-\bibliography{$bibliography$}
+% add the bibliographies
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
 
+$if(appendix)$
 \appendix
-
 $appendix$
+$endif$
+
+$for(include-after)$
+$include-after$
+
+$endfor$
 
 \end{document}

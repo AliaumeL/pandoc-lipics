@@ -1,0 +1,45 @@
+-- Aliaume LOPEZ 2024
+--
+-- This file is a Lua script that correctly converts pandoc div syntax
+-- into correct LIPIcs theorem environments.
+--
+-- Typical syntax is
+--
+-- ::: theorem 
+-- # optional title
+--
+-- content
+--
+-- # optional proof first
+--
+-- content 
+--
+-- # optional proof second
+--
+-- content
+--
+-- :::
+--
+--
+-- The output is 
+--
+-- \begin{theorem}[optional title]
+-- content
+-- \end{theorem}
+-- \begin{proof}
+-- content
+-- \end{proof}
+-- \begin{proof}
+-- content
+-- \end{proof}
+--
+-- Furthermore, proofs can be selectively sent to appendix
+-- by adding an "appendix" attribute.
+--
+--
+-- In HTML mode, the script will output the proofs in expandable
+-- environments.
+--
+--
+-- TODO.
+
