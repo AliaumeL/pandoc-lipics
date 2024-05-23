@@ -15,8 +15,8 @@ HTML_TEMPLATE=template/lipics.template.html
 
 .PHONY: watch clean
 
-$(PAPER).tex: $(SRC) $(TEX_TEMPLATE) $(TEX_STATIC)
-	pandoc -s -o $@ $(SRC) \
+$(PAPER).tex: $(SRC) $(PAPER).md $(TEX_TEMPLATE) $(TEX_STATIC)
+	pandoc -s -o $@ $(PAPER).md $(SRC) \
 		   --template=$(TEX_TEMPLATE) \
 		   -F pandoc-crossref \
 		   --citeproc \
@@ -44,8 +44,9 @@ arxiv.tar.gz: $(PAPER).arxiv.tex $(TEX_STATIC)
 %.pdf: %.tex
 	latexmk -pdf -xelatex $<
 
-$(PAPER).html: $(SRC) $(HTML_TEMPLATE)
-	pandoc -s -o $@ $(SRC) \
+$(PAPER).html: $(PAPER).md $(SRC) $(HTML_TEMPLATE)
+	pandoc -s -o $@ $(PAPER).md $(SRC) \
+		   --number-sections \
 		   --template=$(HTML_TEMPLATE) \
 		   --mathjax \
 		   -F pandoc-crossref \

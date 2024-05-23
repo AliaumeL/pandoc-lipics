@@ -1,0 +1,89 @@
+:root {
+    --lipicsGray: #4f4f54;
+    --lipicsBulletGray: #99999b;
+    --lipicsLineGray: #828082;
+    --lipicsLightGray: #d9d9da;
+    --lipicsYellow: #fcbf12;
+    --backgroundColor: #f9f9f9;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+    background-color: var(--backgroundColor);
+    margin: auto;
+    padding: 1em;
+    max-width: 800px;
+}
+
+/* Use lipics style headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+/* Place the section number in a yellow box */
+h1 .header-section-number {
+    background-color: var(--lipicsYellow);
+    color: black;
+    padding: 0.2em 0.5em 0em 0.5em;
+    margin-right: 0.5em;
+    line-height: 1;
+}
+
+/* abstract */
+section#abstract-section {
+    margin-top: 2em;
+    margin-bottom: 1em;
+    border-top: 2px solid var(--lipicsLineGray);
+    padding:0px;
+    line-height: 0.5;
+}
+section#abstract-section h4 {
+    background-color: var(--backgroundColor);
+    margin-top: -5em;
+    margin-left: 1em;
+    display: inline-block;
+    line-height: 1.5;
+    padding: 0.2em 0.5em 0em 0.5em;
+}
+/* bold gray names for definitions in the metadata section */
+section#metadata-section dl dt {
+    font-weight: bold;
+    color: var(--lipicsGray);
+    font-family: 'Open Sans', sans-serif;
+    display: inline-block;
+}
+section#metadata-section dl dd {
+    display: inline;
+}
+
+/* Theorems, lemmas, etc. */
+.theorem {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding: 1em;
+    border: 1px solid var(--lipicsLineGray);
+    background-color: var(--backgroundColor);
+}
+
+.theorem h3 {
+    display: inline;
+    font-style: normal;
+}
+
+.theorem h3:before {
+    content: "▶ Theorem ";
+    font-weight: normal;
+    color: var(--lipicsGray);
+}
+.theorem .header-section-number {
+    display: none;
+}
+
+.theorem {
+    /* italic */
+    font-style: italic;
+}
