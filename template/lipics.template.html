@@ -71,17 +71,18 @@
     <body>
     <header>
         <h1>$title$</h1>
-        <ol>
+        <ol class="authors">
             $for(author)$
-            <li>$author.name$
-                $if(author.affiliation)$
-                <sup>$author.affiliation$</sup>
-                $endif$
+            <li><span class="name">$author.name$</span>
                 $if(author.email)$
                 <a href="mailto:$author.email$">✉</a>
                 $endif$
                 $if(author.orcid)$
                 <a href="https://orcid.org/$author.orcid$">🔗</a>
+                $endif$
+                <br/>
+                $if(author.affiliation)$
+                $author.affiliation$
                 $endif$
             </li>
             $endfor$
@@ -93,16 +94,17 @@
         <h4 data-lang-fr="Résumé"
             data-lang-en="Abstract"
             data-lang-pl="Streszczenie">Abstract</h4>
+        <hr/>
         $abstract$
     </section>
     <section id="metadata-section">
         <dl>
+            <dt>2012 ACM Subject Classification</dt>
+            <dd>
+            $for(acm-cc-desc)$$it$$sep$, $endfor$
+            </dd>
             <dt>Keywords</dt>
             <dd>$for(keyword)$$it$$sep$, $endfor$</dd>
-            <dt>2012 ACM Subject Classification</dt>
-            $for(acm-cc-desc)$
-            <dd>$it$</dd>
-            $endfor$
             <dt>Digital Object Identifier</dt>
             <dd><a href="https://doi.org/$doi$">$doi$</a></dd>
             <dt>Acknowledgements</dt>

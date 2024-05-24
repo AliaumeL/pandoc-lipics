@@ -62,3 +62,17 @@ has Theorem 1.6].
 
 # Main part 
 
+Imagine some text followed by a theorem
+
+<div class="theorem">
+<h3><span class="number" data-number="1">Theorem 1</span> (good omens).</h3>
+<p>There are good omens.</p>
+<ul>
+<li>Good omen 1.</li>
+<li>Good omen 2.</li>
+</ul>
+<details>
+<summary>Proof</summary>
+<p>Proof of Theorem 1.</p>
+</details>
+</div>

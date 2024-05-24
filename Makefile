@@ -49,7 +49,6 @@ $(PAPER).html: $(PAPER).md $(SRC) $(HTML_TEMPLATE)
 		   --number-sections \
 		   --template=$(HTML_TEMPLATE) \
 		   --mathjax \
-		   -F pandoc-crossref \
 		   --citeproc \
 		   --metadata=live-reload:$(PANDOC_LIVE_RELOAD) \
 		   --metadata=git-revision:`git rev-parse HEAD` \

@@ -5,6 +5,9 @@
     --lipicsLightGray: #d9d9da;
     --lipicsYellow: #fcbf12;
     --backgroundColor: #f9f9f9;
+
+    --title-font: 'Libertinus Sans', sans-serif;
+    --main-font: "EB Garamond", serif;
 }
 
 body {
@@ -17,9 +20,25 @@ body {
     max-width: 800px;
 }
 
+/* author section */
+header ol.authors {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+header ol.authors li {
+    margin-top: 0.5em;
+}
+
+header ol.authors span.name {
+    font-family: var(--title-font);
+    font-weight: 700;
+}
+
 /* Use lipics style headings */
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--title-font);
     font-weight: 700;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
@@ -34,53 +53,59 @@ h1 .header-section-number {
 }
 
 /* abstract */
-section#abstract-section {
-    margin-top: 2em;
-    margin-bottom: 1em;
-    border-top: 2px solid var(--lipicsLineGray);
-    padding:0px;
-    line-height: 0.5;
+section#abstract-section hr {
+    /* color the line gray */
+    color: var(--lipicsLineGray);
+    margin-top: -0.9em;
 }
+
 section#abstract-section h4 {
     background-color: var(--backgroundColor);
-    margin-top: -5em;
+    margin-bottom: -1em;
     margin-left: 1em;
     display: inline-block;
-    line-height: 1.5;
     padding: 0.2em 0.5em 0em 0.5em;
 }
+
+section#metadata-section dl {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    grid-gap: 0.5em;
+}
+
 /* bold gray names for definitions in the metadata section */
 section#metadata-section dl dt {
     font-weight: bold;
     color: var(--lipicsGray);
-    font-family: 'Open Sans', sans-serif;
-    display: inline-block;
+    font-family: var(--title-font);
 }
 section#metadata-section dl dd {
-    display: inline;
 }
 
 /* Theorems, lemmas, etc. */
 .theorem {
     margin-top: 1em;
     margin-bottom: 1em;
-    padding: 1em;
-    border: 1px solid var(--lipicsLineGray);
-    background-color: var(--backgroundColor);
 }
 
 .theorem h3 {
     display: inline;
     font-style: normal;
+    font-size: 1em;
+    color: var(--lipicsGray);
 }
 
 .theorem h3:before {
-    content: "▶ Theorem ";
-    font-weight: normal;
-    color: var(--lipicsGray);
+    font-size: 1em;
+    content: "\25B6";
 }
+
 .theorem .header-section-number {
     display: none;
+}
+
+.theorem p {
+    display: inline;
 }
 
 .theorem {
