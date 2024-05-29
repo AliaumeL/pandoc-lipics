@@ -1,6 +1,8 @@
 ---
 title: "Sample Article for LIPIcs"
 title-running: "Sample LIPIcs Running"
+lipics:
+    composition-mode: true
 author:
     - name: "John Q. Public"
       affiliation: "Dummy University Computing Laboratory"
@@ -10,6 +12,11 @@ author:
 bibliography: lipics-v2021-sample-article.bib
 abstract: |
     Abstract of the paper
+knowledges:
+  - synonyms:
+    - alpha
+    - beta 
+    - gamma
 refs: |
     ::: {#refs}
     :::
@@ -17,6 +24,10 @@ refs: |
 
 
 # Introduction
+
+We introduce [alpha]{.intro} and [beta]{.reintro} following the work of
+@DBLP:conf/focs/HopcroftPV75.
+
 
 ## Theorems and proofs
 
@@ -29,6 +40,10 @@ Theorem statement
 
 proof statement 
 :::
+
+\begin{equation*}
+x = x + 1
+\end{equation*}
 
 ::: {.claim restate="firstclaim" title="My Title" #firstclaimlabel}
 
@@ -57,7 +72,8 @@ This is a proof sketch.
 Now, we can reference to @optional-theorem-title and [Create a link](#optional-theorem-title).
 
 # References 
-[Knowledge]{.intro}
+
+[beta]{.ref}
 
 
 

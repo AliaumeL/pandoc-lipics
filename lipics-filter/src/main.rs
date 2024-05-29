@@ -45,6 +45,9 @@ use std::io::{self,Read,Write};
 ///
 /// Better Macros.
 ///
+/// -> for the moment, we will also use the "standalone" compilation of the math components
+/// to get png images of the macros. This is way simpler.
+///
 /// Checking.
 ///
 /// - check that every theorem has a proof (or proof sketch): provide the list of theorems without proofs
@@ -294,7 +297,7 @@ enum AnchorKind {
     Theorem, Lemma, Corollary, Proposition, Conjecture, Claim,
     Figure, Algorithm, Table, Definition, Remark, Example, Proof,
     Section, Subsection, Subsubsection, Paragraph, Subparagraph,
-    Enumerate, Itemize, Description, Equation
+    Enumerate, Itemize, Description, Equation,
 }
 
 /// An anchor in the document
@@ -309,8 +312,17 @@ struct Anchor {
 #[derive(Debug)]
 struct Context {
     theorem_counter: u32,
+    // knowledge-forward  : hash -> knowledge
+    // knowledge-backward : hash -> hash  (hash of a plain text to the hash of the knowledge)
+    knowledge_forward: HashMap<String,KnowledgeEntry>,
+    knowledge_backward: HashMap<String,String>,
+    //
     // references
-    references: HashMap<String,Anchor>,
+    theorems: HashMap<String,Anchor>,
+    // forward references (a label points to somewhere)
+    // label -> Anchor
+    // backward references (a label is pointed by some things)
+    // label -> Vec<Anchor>
 }
 
 impl Context {
@@ -318,6 +330,8 @@ impl Context {
         Context {
             theorem_counter: 0,
             theorems: HashMap::new(),
+            knowledge_forward: HashMap::new(),
+            knowledge_backward: HashMap::new(),
         }
     }
 
@@ -410,8 +424,170 @@ fn block_to_theorem(ctx: &mut Context, block: Block) -> Option<Theorem> {
 }
 
 
+#[derive(Debug)]
+enum KnowledgeCommandKind {
+    Intro, Reintro, Ref, 
+}
+
+#[derive(Debug)]
+struct KnowledgeCommand {
+    kind: KnowledgeCommandKind,
+    content: Vec<Inline>,
+    name: Option<String>,
+    scope: Option<String>,
+}
+
+#[derive(Debug)]
+struct KnowledgeEntry {
+    label: String,
+    synonyms: Vec<(Vec<Inline>, String)>,
+}
+
+fn span_to_knowledge(ctx : &mut Context, span : Inline) -> Option<KnowledgeCommand> {
+    match span {
+        Inline::Span((ident, classes, keyvals), inlines) => {
+            let cls : HashSet<String> = classes.into_iter().collect();
+            let kls : HashMap<String,String> = keyvals.into_iter().collect();
+            let kind = if cls.contains("intro") {
+                KnowledgeCommandKind::Intro
+            } else if cls.contains("reintro") {
+                KnowledgeCommandKind::Reintro
+            } else if cls.contains("ref") {
+                KnowledgeCommandKind::Ref
+            } else {
+                return None;
+            };
+            let name = kls.get("kl").map(|s| s.to_string());
+            let scope = kls.get("scope").map(|s| s.to_string());
+            Some(KnowledgeCommand { kind, name, scope, content: inlines })
+        }
+        _ => None,
+    }
+}
+
+fn knowledge_to_latex(knowledge: KnowledgeCommand) -> Vec<Inline> {
+    eprintln!("Knowledge: {:?}", knowledge);
+    let format = pandoc_ast::Format("latex".to_string());
+    let mut inlines = vec![];
+    let params = match (knowledge.scope, knowledge.name) {
+        (Some(scope),Some(name)) => format!("({})[{}]", scope, name),
+        (Some(scope),None) => format!("({})", scope),
+        (None,Some(name)) => format!("[{}]", name),
+        (None,None) => "".to_string(),
+    };
+    match knowledge.kind {
+        KnowledgeCommandKind::Intro => {
+            inlines.push(Inline::RawInline(format.clone(), format!("\\intro{}{{", params)));
+            inlines.extend(knowledge.content);
+            inlines.push(Inline::RawInline(format.clone(), "}".to_string()));
+        }
+        KnowledgeCommandKind::Reintro => {
+            inlines.push(Inline::RawInline(format.clone(), format!("\\reintro{}{{", params)));
+            inlines.extend(knowledge.content);
+            inlines.push(Inline::RawInline(format.clone(), "}".to_string()));
+        }
+        KnowledgeCommandKind::Ref => {
+            inlines.push(Inline::RawInline(format.clone(), format!("\\kl{}{{", params)));
+            inlines.extend(knowledge.content);
+            inlines.push(Inline::RawInline(format.clone(), "}".to_string()));
+        }
+    }
+    inlines 
+}
+
+fn knowledge_to_pandoc(ctx: &mut Context, knowledge: KnowledgeCommand) -> Vec<Inline> {
+    match knowledge.kind {
+        KnowledgeCommandKind::Intro => {
+            vec![
+                Inline::Span(("".to_string(), vec!["knowledge".to_string()], vec![]), knowledge.content)
+            ]
+        }
+        KnowledgeCommandKind::Reintro => {
+            vec![
+                Inline::Span(("".to_string(), vec!["knowledge".to_string()], vec![]), knowledge.content)
+            ]
+        }
+        KnowledgeCommandKind::Ref => {
+            // first we resolve the link
+            let intro_identifier = "".to_string();
+            let id = format!("knowledge-{}", intro_identifier);
+            let classes = vec!["knowledge".to_string()];
+            let keyvals = vec![];
+            let content = knowledge.content;
+            let url = format!("#{}", id);
+            let title = "".to_string();
+
+            vec![
+                Inline::Link((id, classes, keyvals), content, (url, title))
+            ]
+        }
+    }
+}
+
 struct MyVisitor {
     ctx: Context,
+}
+
+fn build_resolver(ctx: &mut Context, meta: &pandoc_ast::Map<String, pandoc_ast::MetaValue>) { 
+    // parse an external knowledge file if needed
+    let knowledges = match meta.get("knowledge") {
+        Some(pandoc_ast::MetaValue::MetaList(values)) => values,
+        _ => return,
+    };
+
+    for item in knowledges {
+        // create a unique label for the knowledge
+        let label = format!("knowledge-{}", ctx.next_theorem());
+        let synonyms = match item {
+            pandoc_ast::MetaValue::MetaMap(map) => {
+                match map.get("synonyms") {
+                    Some(value) => {
+                        match **value {
+                            pandoc_ast::MetaValue::MetaList(values) => values,
+                            _ => continue,
+                        }
+                    }
+                    _ => continue,
+                }
+            }
+            _ => {continue}
+        };
+        let mut knowledge_synonyms = vec![];
+        for synonym in synonyms {
+            // a synonym is either a string or a map 
+            // with name: and scope: fields
+            match synonym {
+                pandoc_ast::MetaValue::MetaString(name) => {
+                    knowledge_synonyms.push((vec![Inline::Str(name.clone())], "".into()));
+                }
+                pandoc_ast::MetaValue::MetaMap(map) => {
+                    let name = match map.get("name") {
+                        Some(s) => {
+                            match **s {
+                                pandoc_ast::MetaValue::MetaString(name) => name,
+                                _ => {continue}
+                            }
+                        }
+                        _ => {continue}
+                    };
+                    let scope = match map.get("scope") {
+                        Some(s) => {
+                            match **s {
+                                pandoc_ast::MetaValue::MetaString(scope) => scope,
+                                _ => {continue}
+                        }
+                        _ => None,
+                    };
+                    knowledge_synonyms.push((vec![Inline::Str(name.clone())], scope.unwrap_or("".to_string())));
+                }
+                _ => {continue}
+            }
+        }
+        ctx.knowledge_forward.insert(label.clone(), KnowledgeEntry { label, synonyms: knowledge_synonyms });
+        for (synonym, scope) in knowledge_synonyms {
+            ctx.knowledge_backward.insert(format!("{:?}::scope::{}", synonym, scope), label.clone());
+        }
+    }
 }
 
 impl MutVisitor for MyVisitor {
@@ -425,6 +601,20 @@ impl MutVisitor for MyVisitor {
             }
         }
         *blocks = new_blocks;
+        self.walk_vec_block(blocks);
+    }
+
+    fn visit_vec_inline(&mut self, inlines: &mut Vec<Inline>) {
+        let mut new_inlines = vec![];
+        for inline in inlines.iter_mut() {
+            if let Some(knowledge) = span_to_knowledge(&mut self.ctx, inline.clone()) {
+                new_inlines.extend(knowledge_to_latex(knowledge));
+            } else {
+                new_inlines.push(inline.clone());
+            }
+        }
+        *inlines = new_inlines;
+        self.walk_vec_inline(inlines);
     }
 }
 
@@ -433,6 +623,7 @@ fn main() {
     let mut visitor = MyVisitor { ctx: Context::new() };
     io::stdin().read_to_string(&mut s).unwrap();
     let s = pandoc_ast::filter(s, |mut pandoc| {
+        build_resolver(&mut visitor.ctx, &pandoc.meta);
         visitor.walk_pandoc(&mut pandoc);
         pandoc
     });

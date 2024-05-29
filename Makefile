@@ -30,14 +30,14 @@ HTML_TEMPLATE=template/lipics.template.html
 
 # Creating a self contained arxiv file
 # with all references included
-$(PAPER).arxiv.tex: $(PAPER).tex
+%.arxiv.tex: %.tex
 	latexpand -o $@ \
 			  --empty-comments \
 			  --expand-bbl $(PAPER).bbl \
 		      $<
 
 # Creating an archive ready to be distributed
-arxiv.tar.gz: $(PAPER).arxiv.tex $(TEX_STATIC)
+arxiv.tar.gz: %.arxiv.tex $(TEX_STATIC)
 	mkdir -p arxiv
 	mv $(PAPER).arxiv.tex arxiv/$(PAPER).tex
 	cp $(TEX_STATIC) arxiv/
@@ -52,7 +52,9 @@ arxiv.tar.gz: $(PAPER).arxiv.tex $(TEX_STATIC)
 	latexmk -pdf -pdflatex $<
 
 %.html: %.md $(SRC) $(HTML_TEMPLATE)
-	pandoc -s -o $@ $(PAPER).md $(SRC) \
+	pandoc -s -o $@ \
+		   $< \
+		   $(SRC) \
 		   --number-sections \
 		   --template=$(HTML_TEMPLATE) \
 		   --mathjax \

@@ -127,13 +127,8 @@ $if(knowledges)$
 % we set the mode to paper if lipics.review-mode or lipics.final-mode are set
 % if lipics.arxiv-mode is set, we set the mode to electronic
 % otherwise we use the composition mode
-\usepackage[capitalise,noabbrev,nameinlink]{cleveref}
-\usepackage[cleveref,xcolor,hyperref,
-$if(lipics.review-mode)$paper$endif$
-$if(lipics.final-mode)$paper$endif$
-$if(lipics.arxiv-mode)$electronic$endif$
-$if(lipics.composition-mode)$composition$endif$
-]{knowledge}
+%\usepackage[capitalise,noabbrev,nameinlink]{cleveref}
+\usepackage[cleveref,xcolor,hyperref,$if(lipics.review-mode)$paper$endif$$if(lipics.final-mode)$paper$endif$$if(lipics.arxiv-mode)$electronic$endif$$if(lipics.composition-mode)$composition$endif$]{knowledge}
 \knowledgeconfigure{notion}
 $endif$
 
