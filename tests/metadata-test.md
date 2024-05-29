@@ -30,69 +30,24 @@ acknowledgement: "We would like to thank our colleagues for their feedback."
 bibliography: lipics-v2021-sample-article.bib
 abstract: |
     Abstract of the paper
+refs: |
+    ::: {#refs}
+    :::
 ...
 
 
 # Introduction
 
-## Theorems and proofs
-
-::: theorem :::
-### Optional Theorem title
-
-Theorem statement
-
-# Proof
-
-proof statement 
-
-
-:::
-
-::: {.claim restate="firstclaim" title="My Title" #firstclaimlabel}
-
-Let $x$ be a variable, we can do this and this and that.
-
-Then in particular:
-
-i. $x$ is a variable.
-ii. $x$ is a variable.
-
-All of the above are equivalent to $x$ being a variable.
-
-# Proof Sketch
-
-:::
-
-## Knowledges
-
-TODO.
+Some Introduction 
 
 ## Citations 
 
 We start by citing a paper [@DBLP:journals/cacm/Knuth74].
 
-We can also cite them like this @DBLP:journals/cacm/Knuth74. Which becomes a
-tiny bit more impressive using a lot of names such as
+We can also cite them like this @DBLP:journals/cacm/Knuth74. Which becomes
+a tiny bit more impressive using a lot of names such as
 @DBLP:conf/focs/HopcroftPV75.
 
 Note that we have the full power of the pandoc citation syntax. In particular
 we can [see @DBLP:journals/cacm/Knuth74; because @DBLP:conf/focs/HopcroftPV75
 has Theorem 1.6].
-
-# Main part 
-
-Imagine some text followed by a theorem
-
-<div class="theorem">
-<h3><span class="number" data-number="1">Theorem 1</span> (good omens).</h3>
-<p>There are good omens.</p>
-<ul>
-<li>Good omen 1.</li>
-<li>Good omen 2.</li>
-</ul>
-<details>
-<summary>Proof</summary>
-<p>Proof of Theorem 1.</p>
-</details>
-</div>

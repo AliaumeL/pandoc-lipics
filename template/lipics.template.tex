@@ -1,9 +1,4 @@
-\documentclass[a4paper,
-               $if(lipics.anonymous)$anonymous,$endif$
-               UKenglish,
-               cleveref,
-               autoref,
-               thm-restate]{lipics-v2021}
+\documentclass[a4paper,$if(lipics.anonymous)$anonymous,$endif$UKenglish,cleveref,autoref,thm-restate]{lipics-v2021}
 
 % if images are in a different directory
 $if(graphicspath)$
@@ -24,6 +19,44 @@ $endfor$
 % so \cite{foo} will print [1]
 % and \citenum{foo} will print 1
 % \newcommand{\citenum}[1]{\cite{#1}}
+
+% START OF CUSTOM MACROS
+
+\newcommand{\tightlist}{%
+    \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}\setlength{\parsep}{0pt} %
+}
+% Create a proof environment for results in appendix,
+% that take a label of a theorem in the main text, and
+% produce a proof
+% \begin{proof}[Proof of \cref{the-label}]
+% \phantomsection\label{the-label:proof}
+% content
+% \end{proof}
+\NewDocumentEnvironment{proofof}{o}{%
+    \IfValueTF{#1}{%
+        \begin{proof}[Proof of \cref{#1} on page \pageref{#1}]
+        \phantomsection\label{#1:proof}
+    }{%
+        \begin{proof}
+    }
+    \let\oldqedsymbol\qedsymbol
+    \renewcommand\qedsymbol{\hyperref[#1]{\oldqedsymbol}}
+}{%
+    \end{proof}
+    \renewcommand\qedsymbol{\oldqedsymbol}
+}
+
+% Refers to the proof of a result
+\NewDocumentCommand{\proofref}{m}{%
+    % if appendices are present, then refer to the appendix
+    % otherwise do nothing.
+    % \hyperref[#1:proof]{Proof of \cref{#1}}
+    \IfRefUndefinedExpandable{#1:proof}{}{%
+        \hfill\hyperref[#1:proof]{(Proof p.\pageref{#1:proof})}
+    }
+}
+
+% END OF CUSTOM MACROS
 
 \title{$title$}
 \titlerunning{$title-running$}

@@ -15,11 +15,15 @@ HTML_TEMPLATE=template/lipics.template.html
 
 .PHONY: watch clean
 
-$(PAPER).tex: $(SRC) $(PAPER).md $(TEX_TEMPLATE) $(TEX_STATIC)
-	pandoc -s -o $@ $(PAPER).md $(SRC) \
+%.tex: %.md $(SRC) $(TEX_TEMPLATE) $(TEX_STATIC)
+	pandoc -s -o $@ \
+		   $< \
+		   $(SRC) \
 		   --template=$(TEX_TEMPLATE) \
-		   -F pandoc-crossref \
+		   --filter lipics-filter/target/debug/lipics-filter \
 		   --citeproc \
+		   --metadata=suppress-bibliography:true \
+		   --lua-filter=template/lipics-citation.lua \
 		   --metadata=git-revision:`git rev-parse HEAD` \
 		   --metadata=git-repositiory:`git remote get-url origin` \
 		   -t latex
@@ -40,11 +44,14 @@ arxiv.tar.gz: $(PAPER).arxiv.tex $(TEX_STATIC)
 	tar -czf arxiv.tar.gz arxiv/*
 
 # Building pdf files in general
-# using xelatex
+# using pdflatex because
+# xelatex is not compatible with lipics
+# due to the use of \input{glyphtounicode}
+# in the class file
 %.pdf: %.tex
-	latexmk -pdf -xelatex $<
+	latexmk -pdf -pdflatex $<
 
-$(PAPER).html: $(PAPER).md $(SRC) $(HTML_TEMPLATE)
+%.html: %.md $(SRC) $(HTML_TEMPLATE)
 	pandoc -s -o $@ $(PAPER).md $(SRC) \
 		   --number-sections \
 		   --template=$(HTML_TEMPLATE) \

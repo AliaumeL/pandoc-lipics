@@ -4,13 +4,15 @@ The goal of this repository is to allow the usage of Pandoc to write papers in
 the LIPIcs template. This is a work in progress, but the features that are
 planned are the following:
 
+## Roadmap
+
 - [x] Create a pandoc template file with options adapted to the LIPIcs
   template.
-- [ ] Create an html template that mimics the LIPIcs style.
-- [ ] Find a way to make bibliographies work with the LIPIcs style, that only
-  allows plain `bibtex` commands.
+- [x] Create an html template that mimics the LIPIcs style.
 - [ ] Create a filter to allow usage of the theorem environments in the pandoc
   markdown.
+- [ ] Find a way to make bibliographies work with the LIPIcs style, that only
+  allows plain `bibtex` commands.
 - [ ] Create a filter to have the appendix be part of the main document
 - [ ] Create a filter to automatically generate an appendix 
 - [ ] Create a filter to ease the use of the knowledge package
