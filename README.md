@@ -4,11 +4,11 @@ The goal of this repository is to allow the usage of Pandoc to write papers in
 the LIPIcs template. This is a work in progress, but the features that are
 planned are the following:
 
-## Roadmap
-
 - [x] Create a pandoc template file with options adapted to the LIPIcs
   template.
 - [x] Create an html template that mimics the LIPIcs style.
+- [ ] Create a docker image with pandoc and the rust toolchain
+- [ ] Create a CI/CD environment
 - [ ] Create a filter to allow usage of the theorem environments in the pandoc
   markdown.
 - [ ] Find a way to make bibliographies work with the LIPIcs style, that only
