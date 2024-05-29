@@ -312,6 +312,7 @@ struct Anchor {
 #[derive(Debug)]
 struct Context {
     theorem_counter: u32,
+    label_counter: u32,
     // knowledge-forward  : hash -> knowledge
     // knowledge-backward : hash -> hash  (hash of a plain text to the hash of the knowledge)
     knowledge_forward: HashMap<String,KnowledgeEntry>,
@@ -329,6 +330,7 @@ impl Context {
     fn new() -> Context {
         Context {
             theorem_counter: 0,
+            label_counter: 0,
             theorems: HashMap::new(),
             knowledge_forward: HashMap::new(),
             knowledge_backward: HashMap::new(),
@@ -438,9 +440,15 @@ struct KnowledgeCommand {
 }
 
 #[derive(Debug)]
+enum KnowledgeSynonym {
+    Global(Vec<Inline>),
+    Scoped(Vec<Inline>, String)
+}
+
+#[derive(Debug)]
 struct KnowledgeEntry {
     label: String,
-    synonyms: Vec<(Vec<Inline>, String)>,
+    synonyms: Vec<KnowledgeSynonym>,
 }
 
 fn span_to_knowledge(ctx : &mut Context, span : Inline) -> Option<KnowledgeCommand> {
@@ -528,8 +536,61 @@ struct MyVisitor {
     ctx: Context,
 }
 
+fn meta_to_string(meta : &pandoc_ast::MetaValue) -> Option<String> {
+    match meta {
+        pandoc_ast::MetaValue::MetaString(s) => Some(s.clone()),
+        _ => None
+    }
+}
+
+fn meta_to_inline(meta : &pandoc_ast::MetaValue) -> Option<Vec<Inline>> {
+    match meta {
+        pandoc_ast::MetaValue::MetaString(s) => {
+            Some(vec![Inline::Str(s.clone())])
+        }
+        pandoc_ast::MetaValue::MetaInlines(i) => {
+            Some(i.clone())
+        }
+        _ => None
+    }
+}
+
+
+fn parse_knowledge_synonym(meta : &pandoc_ast::MetaValue) -> Option<KnowledgeSynonym> {
+    use pandoc_ast::MetaValue;
+    match meta {
+        MetaValue::MetaString(s) => {
+            let str_to_inline = Inline::Str(s.clone());
+            Some(KnowledgeSynonym::Global(vec![str_to_inline]))
+        }
+        MetaValue::MetaInlines(i) => {
+            Some(KnowledgeSynonym::Global(i.clone()))
+        }
+        MetaValue::MetaMap(m) => {
+            let name = meta_to_inline(m.get("name")?)?;
+            let value = meta_to_string(m.get("value")?)?;
+            Some(KnowledgeSynonym::Scoped(name, value))
+        }
+        _ => None
+    }
+}
+
+fn parse_knowledge_entry(ctx : &mut Context, meta : &pandoc_ast::MetaValue) -> Option<KnowledgeEntry> {
+    use pandoc_ast::MetaValue;
+    match meta {
+        MetaValue::MetaMap(m) => {
+            let synonyms = m.get("synonyms")?;
+            match synonyms {
+                MetaValue::MetaList(l) => {
+                    let parsed_synonyms : Vec<KnowledgeSynonym> = l.into_iter().filter_map(parse_knowledge_synonym).collect();
+                    if parsed_synonyms.
+                }
+            }
+        }
+    }
+}
+
 fn build_resolver(ctx: &mut Context, meta: &pandoc_ast::Map<String, pandoc_ast::MetaValue>) { 
-    // parse an external knowledge file if needed
     let knowledges = match meta.get("knowledge") {
         Some(pandoc_ast::MetaValue::MetaList(values)) => values,
         _ => return,
@@ -576,9 +637,10 @@ fn build_resolver(ctx: &mut Context, meta: &pandoc_ast::Map<String, pandoc_ast::
                                 pandoc_ast::MetaValue::MetaString(scope) => scope,
                                 _ => {continue}
                         }
-                        _ => None,
+                        _ => {continue}
                     };
                     knowledge_synonyms.push((vec![Inline::Str(name.clone())], scope.unwrap_or("".to_string())));
+                    }
                 }
                 _ => {continue}
             }
