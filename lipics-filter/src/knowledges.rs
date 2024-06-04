@@ -154,7 +154,7 @@ fn knowledge_to_latex(knowledge: KnowledgeCommand) -> Vec<Inline> {
 /// and thus can be used for any kind of output format (in particular, LaTeX without
 /// knowledge installed)
 ///
-fn knowledge_to_pandoc(db: &mut KnowledgeResolver, kl: KnowledgeCommand) -> Vec<Inline> {
+fn knowledge_to_pandoc(db: &mut KnowledgeResolver, kl: KnowledgeCommand) -> Inline {
     let knowledge_label = inlines_to_label(&kl.content);
     let kid = resolve_knowledge(&db.knowledge, &knowledge_label);
 
@@ -168,40 +168,28 @@ fn knowledge_to_pandoc(db: &mut KnowledgeResolver, kl: KnowledgeCommand) -> Vec<
         None => {
             match kl.kind {
                 KnowledgeCommandKind::Intro => {
-                    vec![
                         Inline::Span((kl.ident, vec!["kl-intro".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
-                    ]
                 }
                 KnowledgeCommandKind::Reintro => {
-                    vec![
                         Inline::Span((kl.ident, vec!["kl-reintro".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
-                    ]
                 }
                 KnowledgeCommandKind::Ref => {
-                    vec![
                         Inline::Span((kl.ident, vec!["kl-ref".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
-                    ]
                 }
             }
         }
         Some(entry) => {
             match kl.kind {
                 KnowledgeCommandKind::Intro => {
-                    vec![
                         Inline::Span((kl.ident, vec!["kl-intro".to_string(), "kl-defined".to_string()], vec![]), kl.content)
-                    ]
                 }
                 KnowledgeCommandKind::Reintro => {
-                    vec![
                         Inline::Span((kl.ident, vec!["kl-reintro".to_string(), "kl-defined".to_string()], vec![]), kl.content)
-                    ]
                 }
                 KnowledgeCommandKind::Ref => {
-                    let attr;
-                    let target;
-                    vec![
-                        Inline::Link(attr, kl.content, target)
-                    ]
+                    let attr = (kl.ident, vec!["kl-ref".to_string(), "kl-defined".to_string()], vec![]);
+                    let target = ("".into(),"".into());
+                    Inline::Link(attr, kl.content, target)
                 }
             }
         }
