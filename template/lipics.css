@@ -1,114 +1,125 @@
-:root {
-    --lipicsGray: #4f4f54;
-    --lipicsBulletGray: #99999b;
-    --lipicsLineGray: #828082;
-    --lipicsLightGray: #d9d9da;
-    --lipicsYellow: #fcbf12;
-    --backgroundColor: #f9f9f9;
+/* import EB Garamond */
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap");
+/* import Libertinus Sans */
+@import url("https://fonts.googleapis.com/css2?family=Libertinus+Sans:wght@400;700&display=swap");
 
-    --title-font: 'Libertinus Sans', sans-serif;
-    --main-font: "EB Garamond", serif;
+:root {
+  --lipicsGray: #4f4f54;
+  --lipicsBulletGray: #99999b;
+  --lipicsLineGray: #828082;
+  --lipicsLightGray: #d9d9da;
+  --lipicsYellow: #fcbf12;
+  --backgroundColor: #f9f9f9;
+
+  --title-font: "Libertinus Sans", sans-serif;
+  --main-font: "EB Garamond", serif;
 }
 
 body {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
-    background-color: var(--backgroundColor);
-    margin: auto;
-    padding: 1em;
-    max-width: 800px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background-color: var(--backgroundColor);
+  margin: auto;
+  padding: 1em;
+  max-width: 800px;
+  font-family: var(--main-font);
 }
 
 /* author section */
 header ol.authors {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
 }
 
 header ol.authors li {
-    margin-top: 0.5em;
+  margin-top: 0.5em;
 }
 
 header ol.authors span.name {
-    font-family: var(--title-font);
-    font-weight: 700;
+  font-family: var(--title-font);
+  font-weight: 700;
 }
 
 /* Use lipics style headings */
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--title-font);
-    font-weight: 700;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--title-font);
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
 }
 /* Place the section number in a yellow box */
 h1 .header-section-number {
-    background-color: var(--lipicsYellow);
-    color: black;
-    padding: 0.2em 0.5em 0em 0.5em;
-    margin-right: 0.5em;
-    line-height: 1;
+  background-color: var(--lipicsYellow);
+  color: black;
+  padding: 0.2em 0.5em 0em 0.5em;
+  margin-right: 0.5em;
+  line-height: 1;
 }
 
 /* abstract */
 section#abstract-section hr {
-    /* color the line gray */
-    color: var(--lipicsLineGray);
-    margin-top: -0.9em;
+  /* color the line gray */
+  color: var(--lipicsLineGray);
+  margin-top: -0.9em;
 }
 
 section#abstract-section h4 {
-    background-color: var(--backgroundColor);
-    margin-bottom: -1em;
-    margin-left: 1em;
-    display: inline-block;
-    padding: 0.2em 0.5em 0em 0.5em;
+  background-color: var(--backgroundColor);
+  margin-bottom: -1em;
+  margin-left: 1em;
+  display: inline-block;
+  padding: 0.2em 0.5em 0em 0.5em;
 }
 
 section#metadata-section dl {
-    display: grid;
-    grid-template-columns: 1fr 3fr;
-    grid-gap: 0.5em;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  grid-gap: 0.5em;
 }
 
 /* bold gray names for definitions in the metadata section */
 section#metadata-section dl dt {
-    font-weight: bold;
-    color: var(--lipicsGray);
-    font-family: var(--title-font);
+  font-weight: bold;
+  color: var(--lipicsGray);
+  font-family: var(--title-font);
 }
 section#metadata-section dl dd {
 }
 
 /* Theorems, lemmas, etc. */
 .theorem {
-    margin-top: 1em;
-    margin-bottom: 1em;
+  margin-top: 1em;
+  margin-bottom: 1em;
 }
 
 .theorem h3 {
-    display: inline;
-    font-style: normal;
-    font-size: 1em;
-    color: var(--lipicsGray);
+  display: inline;
+  font-style: normal;
+  font-size: 1em;
+  color: var(--lipicsGray);
 }
 
 .theorem h3:before {
-    font-size: 1em;
-    content: "\25B6";
+  font-size: 1em;
+  content: "\25B6";
 }
 
 .theorem .header-section-number {
-    display: none;
+  display: none;
 }
 
 .theorem p {
-    display: inline;
+  display: inline;
 }
 
 .theorem {
-    /* italic */
-    font-style: italic;
+  /* italic */
+  font-style: italic;
 }

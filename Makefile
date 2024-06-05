@@ -67,7 +67,7 @@ arxiv.tar.gz: %.arxiv.tex $(TEX_STATIC)
 
 watch: export PANDOC_LIVE_RELOAD=1
 watch:
-	find . -name "*.md" | entr -s "make $(PAPER).html && echo reload" | websocat -s 8080
+	find . -name "*.md" | entr -s "make $(PAPER).html && sleep 1 && echo reload" | websocat -s 8080
 
 
 clean:
