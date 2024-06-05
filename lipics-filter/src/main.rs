@@ -31,7 +31,6 @@ impl MutVisitor for MyVisitor {
 
     fn visit_vec_inline(&mut self, inlines: &mut Vec<Inline>) {
         if self.mode != OutputMode::Pandoc {
-            eprintln!("Converting inlines");
             let mut new_inlines = vec![];
             for inline in inlines.iter_mut() {
                 if let Some(knowledge) = span_to_knowledge(inline) {
@@ -93,7 +92,7 @@ struct Cli {
 
 fn parse_pandoc_lipics(meta: &BTreeMap<String, MetaValue>) -> PandocLipics {
     let mode = {
-        let mode_m : Option<String> = utils::meta_deep_get(meta, "pandoc-lipics.mode").and_then(|x| utils::meta_to_string(&x));
+        let mode_m : Option<String> = utils::meta_deep_get(meta, "lipics.mode").and_then(|x| utils::meta_to_string(&x));
         eprintln!("{:?}", mode_m);
         if let Some(s) = mode_m {
             if s == "latex" {
@@ -110,7 +109,7 @@ fn parse_pandoc_lipics(meta: &BTreeMap<String, MetaValue>) -> PandocLipics {
         }
     }; 
 
-    let debug = utils::meta_deep_get(meta, "pandoc-lipics.debug").map(|_| true).unwrap_or(false);
+    let debug = utils::meta_deep_get(meta, "lipics.debug").map(|_| true).unwrap_or(false);
 
     PandocLipics {
         mode, debug

@@ -17,9 +17,11 @@ acm-cc-desc:
 keyword: ["First", "Second", "Third"]
 lipics:
     category: "Invited Paper"
-    review-mode: True
-    arxiv-mode: False
+    review-mode: False
+    arxiv-mode: True
     anonymous: True
+    debug: true
+    mode: latex
 related-version:
     - type: "Preprint"
       url: "https://arxiv.org/abs/XXX"
@@ -28,6 +30,12 @@ supplement:
       url: "http://dx.doi.org/10.4230/LIPIcs.xxx.xxx.xxx"
 acknowledgement: "We would like to thank our colleagues for their feedback."
 bibliography: lipics-v2021-sample-article.bib
+knowledges:
+    - synonyms:
+        - this
+        - that
+        - name: those
+          scope: testing-scope
 abstract: |
     Abstract of the paper
 ...
@@ -66,7 +74,14 @@ All of the above are equivalent to $x$ being a variable.
 
 ## Knowledges
 
-TODO.
+
+We can introduce knowledges with [this]{.intro}
+and later on refer to those using [this]{.ref}.
+If for some strange reason we want to introduce them twice,
+we can use [that]{.reintro}.
+
+If we want to use a scoped knowledge, we can like this [those]{.ref
+scope=testing-scope}.
 
 ## Citations 
 

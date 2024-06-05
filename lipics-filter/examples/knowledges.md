@@ -1,5 +1,5 @@
 ---
-pandoc-lipics:
+lipics:
     mode: pandoc
 knowledges:
     - synonyms:

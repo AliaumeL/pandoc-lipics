@@ -55,6 +55,7 @@ arxiv.tar.gz: %.arxiv.tex $(TEX_STATIC)
 	pandoc -s -o $@ \
 		   $< \
 		   $(SRC) \
+		   --filter lipics-filter/target/debug/lipics-filter \
 		   --number-sections \
 		   --template=$(HTML_TEMPLATE) \
 		   --mathjax \
