@@ -4,77 +4,138 @@
 /// - convert knowledge file to yaml
 /// - parse [knowledge]{.ref scope=xxx kl=yyy} as \kl[xxx](yyy){knowledge}
 /// - parse [knowledge]{.intro} as \intro{knowledge}
-use pandoc_ast::{Block,Inline,MutVisitor};
-use std::collections::{HashMap,HashSet};
+///
+///
+/// TODO:
+/// - [ ] Add debug informations
+/// - [ ] Test
+/// - [ ] Add information back to the metadata (introduced, unknown, backrefs)
 
+use std::hash::Hash;
+use pandoc_ast::{Inline, MetaValue};
+use std::collections::{HashMap, BTreeMap};
 
-/// Create a newtype for "labels"
-/// to avoid confusion with actual strings
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
-struct Label(String);
+use crate::utils;
 
 /// Create a newtype for "knowledges-ids"
 /// to avoid confusion with actual integers
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
-struct KnowledgeId(u16);
+#[derive(Debug,Copy,Clone,PartialEq,Eq,Hash)]
+pub struct KnowledgeId(u16);
 
+
+/// The knowledge commands that can be issued
+/// in the document.
 #[derive(Debug,Clone)]
-enum KnowledgeCommandKind {
-    Intro, Reintro, Ref, 
+pub enum KnowledgeCommandKind {
+    /// Introduces a knowledge (creates an anchor)
+    Intro, 
+    /// Re-introduce a knowledge (does not create an anchor)
+    Reintro, 
+    /// References a knowledge
+    Ref, 
 }
 
+
+/// An internal representation of the knowledge command
+/// to be issued. This is language agnostic.
 #[derive(Debug,Clone)]
-struct KnowledgeCommand {
+pub struct KnowledgeCommand {
+    /// the identifier of the command (for back references)
     ident: String,
+    /// the kind of command
     kind: KnowledgeCommandKind,
+    /// The textual content of the command 
     content: Vec<Inline>,
+    /// An optional specified name for the knowledge
     name: Option<String>,
+    /// An optional specified scope for the knowledge
     scope: Option<String>,
 }
 
+
 #[derive(Debug,Clone)]
-enum KnowledgeSynonym {
+pub enum KnowledgeSynonym {
     Global(Vec<Inline>),
     Scoped(Vec<Inline>, String)
 }
 
+
+impl KnowledgeSynonym {
+    pub fn to_string(&self) -> String {
+        match self {
+            KnowledgeSynonym::Global(i) => {
+                utils::stringify_inlines(&i)
+            }
+            KnowledgeSynonym::Scoped(i,s) => {
+                format!("{}@{}", utils::stringify_inlines(&i), s)
+            }
+        }
+    }
+}
+
+
+impl PartialEq for KnowledgeSynonym {
+    fn eq(&self, other: &Self) -> bool {
+        format!("{:?}", self) == format!("{:?}", other)
+    }
+}
+
+impl Eq for KnowledgeSynonym {}
+
+impl Hash for KnowledgeSynonym {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            KnowledgeSynonym::Global(i) => {
+                format!("{:?}", i).hash(state);
+            }
+            KnowledgeSynonym::Scoped(i,s) => {
+                format!("{:?}@{:?}", i, s).hash(state);
+            }
+        }
+    }
+}
+
 #[derive(Debug,Clone)]
-struct KnowledgeEntry {
-    label: Label,
+pub struct KnowledgeEntry {
     synonyms: Vec<KnowledgeSynonym>,
 }
 
 #[derive(Debug,Clone)]
-struct KnowledgeBase {
+pub struct KnowledgeBase {
     /// Resolve a label to a knowledge entry
     forward:  Vec<KnowledgeEntry>,
     /// Resolve a synonym to a canonical label
-    canonize: HashMap<Label, KnowledgeId>,
+    canonize: HashMap<KnowledgeSynonym, KnowledgeId>,
 }
 
 #[derive(Debug,Clone)]
-struct KnowledgeResolver {
+pub struct KnowledgeResolver {
     /// The knowledge base to resolve
     knowledge: KnowledgeBase,
     /// The identifiers of spans that referenced the knowledge
-    backrefs: Vec<(KnowledgeId, Label)>,
+    backrefs: Vec<(KnowledgeId,KnowledgeCommand)>,
     /// The knowledges that have been introduced 
     /// and their location
-    introduced: Vec<(KnowledgeId, Label)>,
+    introduced: Vec<(KnowledgeId,KnowledgeCommand)>,
+    /// Unknown knowledges
+    unknown: Vec<KnowledgeCommand>,
 }
 
-/// Resolve a label to a knowledge if possible
-fn resolve_knowledge<'a>(kdb : &'a KnowledgeBase, l : &Label) -> Option<&'a KnowledgeEntry> {
-    match kdb.canonize.get(l) {
-        Some(id) => kdb.forward.get(id.0 as usize),
-        None => None,
+impl KnowledgeResolver {
+    pub fn new(db: KnowledgeBase) -> KnowledgeResolver {
+        KnowledgeResolver { knowledge: db, backrefs: vec![], introduced: vec![], unknown: vec![] }
     }
 }
 
-/// Converts Inlines to a Label
-/// -> dumbest conversion possible
-fn inlines_to_label(inlines: &[Inline]) -> Label {
-    Label(format!("{:?}", inlines))
+/// Resolve a label to a knowledge if possible
+fn resolve_knowledge<'a>(kdb : &'a KnowledgeBase, l : &KnowledgeSynonym) -> Option<(KnowledgeId, &'a KnowledgeEntry)> {
+    match kdb.canonize.get(l) {
+        Some(id) => match kdb.forward.get(id.0 as usize) {
+            Some(entry) => Some((*id, entry)),
+            None => None,
+        }
+        None => None,
+    }
 }
 
 fn classes_to_knowledge_kind(classes: &[String]) -> Option<KnowledgeCommandKind> {
@@ -90,7 +151,7 @@ fn classes_to_knowledge_kind(classes: &[String]) -> Option<KnowledgeCommandKind>
 }
 
 fn keyvals_to_knowledge_command(keyvals: &[(String,String)]) -> (Option<String>, Option<String>) {
-    let mut name = None;
+    let mut name  = None;
     let mut scope = None;
     for (k,v) in keyvals {
         if k == "kl" {
@@ -106,7 +167,7 @@ fn keyvals_to_knowledge_command(keyvals: &[(String,String)]) -> (Option<String>,
 /// - [knowledge]{.intro} -> KnowledgeCommand { kind: Intro, content: [knowledge] }
 /// - [knowledge]{.reintro} -> KnowledgeCommand { kind: Reintro, content: [knowledge] }
 /// - [knowledge]{.ref scope=xxx kl=yyy} -> KnowledgeCommand { kind: Ref, content: [knowledge], name: Some("yyy"), scope: Some("xxx") } 
-fn span_to_knowledge(span : &Inline) -> Option<KnowledgeCommand> {
+pub fn span_to_knowledge(span : &Inline) -> Option<KnowledgeCommand> {
     match span {
         Inline::Span((ident, classes, keyvals), inlines) => {
             let (name, scope) = keyvals_to_knowledge_command(keyvals);
@@ -119,8 +180,11 @@ fn span_to_knowledge(span : &Inline) -> Option<KnowledgeCommand> {
 
 /// Transforms a knowledge command into the corresponding
 /// LaTeX code.
-fn knowledge_to_latex(knowledge: KnowledgeCommand) -> Vec<Inline> {
-    eprintln!("Knowledge: {:?}", knowledge);
+///
+/// This function delegates the actual resolution to the
+/// `knowledge` package in LaTeX, and thus requires a
+/// specific preamble in the document.
+pub fn knowledge_to_latex(knowledge: KnowledgeCommand) -> Vec<Inline> {
     let format = pandoc_ast::Format("latex".to_string());
     let mut inlines = vec![];
     let params = match (knowledge.scope, knowledge.name) {
@@ -149,79 +213,144 @@ fn knowledge_to_latex(knowledge: KnowledgeCommand) -> Vec<Inline> {
     inlines 
 }
 
+/// Transforms a knowledge command into the corresponding
+/// LaTeX code. This *avoids* using the knowledge package,
+/// but still emits low-level LaTeX code that allows to
+/// compile the document *in a single pass*.
+///
+/// the resolution of the knowledges is done at compile time
+/// and the code outputs the following macros,
+/// that can be suitably modified in the preamble of the document:
+///
+/// \akldef{unique-id}{content}
+/// \aklref{unique-id}{content}
+/// \aklredef{unique-id}{content}
+/// \akldeferror{content}
+/// \aklreferror{content}
+/// \aklredeferror{content}
+///
+/// TODO: add the possibility to compute the backreferences
+/// and list introduced, duplicated, and unknown knowledges.
+///
+pub fn knowledge_to_fast_latex(db : &mut KnowledgeResolver, kl: KnowledgeCommand) -> Vec<Inline> {
+    let format = pandoc_ast::Format("latex".to_string());
+    let synonym = match (&kl.scope, &kl.name) { 
+        (Some(scope), Some(name)) => KnowledgeSynonym::Scoped(vec![Inline::Str(name.clone())], scope.clone()),
+        (Some(scope), None)       => KnowledgeSynonym::Scoped(kl.content.clone(), scope.clone()),
+        (None       , Some(name)) => KnowledgeSynonym::Global(vec![Inline::Str(name.clone())]),
+        (None       , None)       => KnowledgeSynonym::Global(kl.content.clone()),
+    };
+    let mut inlines = vec![];
+    match resolve_knowledge(&db.knowledge, &synonym) {
+        None => {
+            // We do not have a knowledge entry: this is problematic
+            // and we should issue a warning.
+            db.unknown.push(kl.clone());
+            match kl.kind {
+                KnowledgeCommandKind::Intro => {
+                    inlines.push(Inline::RawInline(format.clone(), "\\akldeferror{".to_string()));
+                }
+                KnowledgeCommandKind::Reintro => {
+                    inlines.push(Inline::RawInline(format.clone(), "\\aklredeferror{".to_string()));
+                }
+                KnowledgeCommandKind::Ref => {
+                    inlines.push(Inline::RawInline(format.clone(), "\\aklreferror{".to_string()));
+                }
+            }
+        }
+        Some((kid, _)) => {
+            let kl_unique_id = format!("kl-{}", kid.0);
+            match kl.kind {
+                KnowledgeCommandKind::Intro => {
+                    db.introduced.push((kid, kl.clone()));
+                    inlines.push(Inline::RawInline(format.clone(), format!("\\akldef{{{}}}{{", kl_unique_id)));
+                }
+                KnowledgeCommandKind::Reintro => {
+                    inlines.push(Inline::RawInline(format.clone(), format!("\\aklredef{{{}}}{{", kl_unique_id)));
+                }
+                KnowledgeCommandKind::Ref => {
+                    inlines.push(Inline::RawInline(format.clone(), format!("\\aklref{{{}}}{{", kl_unique_id)));
+                    db.backrefs.push((kid, kl.clone()));
+                }
+            }
+        }
+    }
+    inlines.extend(kl.content);
+    inlines.push(Inline::RawInline(format.clone(), "}".to_string()));
+    inlines
+}
+
 ///
 /// This functions resolves the knowledge commands at compile time,
 /// and thus can be used for any kind of output format (in particular, LaTeX without
 /// knowledge installed)
 ///
-fn knowledge_to_pandoc(db: &mut KnowledgeResolver, kl: KnowledgeCommand) -> Inline {
-    let knowledge_label = inlines_to_label(&kl.content);
-    let kid = resolve_knowledge(&db.knowledge, &knowledge_label);
-
-    // What we should produce
-    //
-    // 1. if the knowledge is not in the database, we produce a string with the content
-    //    and specific classes
-    // 2. otherwise, we produce a link to the knowledge, or an anchor to the knowledge.
-    //
-    match kid {
+pub fn knowledge_to_pandoc(db: &mut KnowledgeResolver, mut kl: KnowledgeCommand) -> Inline {
+    let synonym = match (&kl.scope, &kl.name) { 
+        (Some(scope), Some(name)) => KnowledgeSynonym::Scoped(vec![Inline::Str(name.clone())], scope.clone()),
+        (Some(scope), None)       => KnowledgeSynonym::Scoped(kl.content.clone(), scope.clone()),
+        (None       , Some(name)) => KnowledgeSynonym::Global(vec![Inline::Str(name.clone())]),
+        (None       , None)       => KnowledgeSynonym::Global(kl.content.clone()),
+    };
+    match resolve_knowledge(&db.knowledge, &synonym) {
         None => {
+            // We do not have a knowledge entry: this is problematic
+            // and we should issue a warning.
+            db.unknown.push(kl.clone());
             match kl.kind {
                 KnowledgeCommandKind::Intro => {
-                        Inline::Span((kl.ident, vec!["kl-intro".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
+                        Inline::Span((kl.ident, vec!["kl-intro".to_string(), "kl-undefined".to_string()], vec![]),
+                        vec![Inline::Emph(kl.content)])
                 }
                 KnowledgeCommandKind::Reintro => {
-                        Inline::Span((kl.ident, vec!["kl-reintro".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
+                        Inline::Span((kl.ident, vec!["kl-reintro".to_string(), "kl-undefined".to_string()], vec![]), 
+                        vec![Inline::Emph(kl.content)])
                 }
                 KnowledgeCommandKind::Ref => {
                         Inline::Span((kl.ident, vec!["kl-ref".to_string(), "kl-undefined".to_string()], vec![]), kl.content)
                 }
             }
         }
-        Some(entry) => {
+        Some((kid, entry)) => {
+            let kl_unique_id = format!("kl-{}", kid.0);
             match kl.kind {
                 KnowledgeCommandKind::Intro => {
-                        Inline::Span((kl.ident, vec!["kl-intro".to_string(), "kl-defined".to_string()], vec![]), kl.content)
+                    let attrs = (kl_unique_id,
+                                vec!["kl-intro".to_string(), "kl-defined".to_string()],
+                                vec![("kl".into(), kid.0.to_string())]);
+                    db.introduced.push((kid, kl.clone()));
+                    Inline::Span(attrs, vec![Inline::Emph(kl.content)])
                 }
                 KnowledgeCommandKind::Reintro => {
-                        Inline::Span((kl.ident, vec!["kl-reintro".to_string(), "kl-defined".to_string()], vec![]), kl.content)
+                    let attrs = ("".into(),
+                                 vec!["kl-reintro".to_string(), "kl-defined".to_string()],
+                                 vec![("kl".into(), kid.0.to_string())]);
+                    Inline::Span(attrs, vec![Inline::Emph(kl.content)])
                 }
                 KnowledgeCommandKind::Ref => {
-                    let attr = (kl.ident, vec!["kl-ref".to_string(), "kl-defined".to_string()], vec![]);
-                    let target = ("".into(),"".into());
-                    Inline::Link(attr, kl.content, target)
+                    if kl.ident == "" {
+                        kl.ident = format!("kref-{}", db.backrefs.len());
+                    }
+                    let attrs = (kl.ident.clone(), vec!["kl-ref".to_string(), "kl-defined".to_string()], vec![]);
+                    let title = format!("Reference to {}", entry.synonyms[0].to_string());
+                    let target : (String, String) = (format!("#kl-{}", kid.0), title);
+                    db.backrefs.push((kid, kl.clone()));
+                    Inline::Link(attrs, kl.content, target)
                 }
             }
         }
     }
 }
 
-struct MyVisitor {
-    ctx: Context,
-}
-
-fn meta_to_string(meta : &pandoc_ast::MetaValue) -> Option<String> {
-    match meta {
-        pandoc_ast::MetaValue::MetaString(s) => Some(s.clone()),
-        _ => None
-    }
-}
-
-fn meta_to_inline(meta : &pandoc_ast::MetaValue) -> Option<Vec<Inline>> {
-    match meta {
-        pandoc_ast::MetaValue::MetaString(s) => {
-            Some(vec![Inline::Str(s.clone())])
-        }
-        pandoc_ast::MetaValue::MetaInlines(i) => {
-            Some(i.clone())
-        }
-        _ => None
-    }
-}
-
-
-fn parse_knowledge_synonym(meta : &pandoc_ast::MetaValue) -> Option<KnowledgeSynonym> {
-    use pandoc_ast::MetaValue;
+///
+/// This function parses a knowledge entry from the metadata
+/// of a pandoc document. 
+///
+/// It is either of the form 
+/// string                          -> global knowledge
+/// { name: string, scope: string } -> scoped knowledge
+///
+fn parse_knowledge_synonym(meta : &MetaValue) -> Option<KnowledgeSynonym> {
     match meta {
         MetaValue::MetaString(s) => {
             let str_to_inline = Inline::Str(s.clone());
@@ -231,87 +360,60 @@ fn parse_knowledge_synonym(meta : &pandoc_ast::MetaValue) -> Option<KnowledgeSyn
             Some(KnowledgeSynonym::Global(i.clone()))
         }
         MetaValue::MetaMap(m) => {
-            let name = meta_to_inline(m.get("name")?)?;
-            let value = meta_to_string(m.get("value")?)?;
-            Some(KnowledgeSynonym::Scoped(name, value))
+            let name = utils::meta_to_inline(m.get("name")?)?;
+            let scope = utils::meta_to_string(m.get("scope")?)?;
+            Some(KnowledgeSynonym::Scoped(name, scope))
         }
         _ => None
     }
 }
 
-fn parse_knowledge_entry(ctx : &mut Context, meta : &pandoc_ast::MetaValue) -> Option<KnowledgeEntry> {
-    use pandoc_ast::MetaValue;
-    match meta {
-        MetaValue::MetaMap(m) => {
-            let synonyms = m.get("synonyms")?;
-            match synonyms {
-                MetaValue::MetaList(l) => {
-                    let parsed_synonyms : Vec<KnowledgeSynonym> = l.into_iter().filter_map(parse_knowledge_synonym).collect();
-                    if parsed_synonyms.
-                }
+
+///
+/// Parses a knowledge entry inside the metadata of a pandoc document.
+/// For now, a knowledge entry is simply a list of synonyms. But in the future,
+/// we may add more information (url, description, bibentry, etc.)
+///
+fn parse_knowledge_entry(meta : &MetaValue) -> Option<KnowledgeEntry> {
+    if let MetaValue::MetaMap(m) = meta {
+        let synonyms = m.get("synonyms")?;
+        match &**synonyms {
+            MetaValue::MetaList(l) => {
+                let synonyms = l.into_iter().filter_map(|e| parse_knowledge_synonym(&e) ).collect();
+                Some(KnowledgeEntry { synonyms })
             }
+            _ => None
         }
+    } else {
+        None
     }
 }
 
-fn build_resolver(ctx: &mut Context, meta: &pandoc_ast::Map<String, pandoc_ast::MetaValue>) { 
-    let knowledges = match meta.get("knowledge") {
-        Some(pandoc_ast::MetaValue::MetaList(values)) => values,
-        _ => return,
-    };
+///
+/// Parses a list of knowledge entries from the metadata of a pandoc document.
+///
+fn parse_knowledge_entries(meta : &MetaValue) -> Option<Vec<KnowledgeEntry>> {
+    if let MetaValue::MetaList(l) = meta {
+        Some(l.into_iter().filter_map(|e| parse_knowledge_entry(&e)).collect())
+    } else {
+        None
+    }
+}
 
-    for item in knowledges {
-        // create a unique label for the knowledge
-        let label = format!("knowledge-{}", ctx.next_theorem());
-        let synonyms = match item {
-            pandoc_ast::MetaValue::MetaMap(map) => {
-                match map.get("synonyms") {
-                    Some(value) => {
-                        match **value {
-                            pandoc_ast::MetaValue::MetaList(values) => values,
-                            _ => continue,
-                        }
-                    }
-                    _ => continue,
-                }
-            }
-            _ => {continue}
-        };
-        let mut knowledge_synonyms = vec![];
-        for synonym in synonyms {
-            // a synonym is either a string or a map 
-            // with name: and scope: fields
-            match synonym {
-                pandoc_ast::MetaValue::MetaString(name) => {
-                    knowledge_synonyms.push((vec![Inline::Str(name.clone())], "".into()));
-                }
-                pandoc_ast::MetaValue::MetaMap(map) => {
-                    let name = match map.get("name") {
-                        Some(s) => {
-                            match **s {
-                                pandoc_ast::MetaValue::MetaString(name) => name,
-                                _ => {continue}
-                            }
-                        }
-                        _ => {continue}
-                    };
-                    let scope = match map.get("scope") {
-                        Some(s) => {
-                            match **s {
-                                pandoc_ast::MetaValue::MetaString(scope) => scope,
-                                _ => {continue}
-                        }
-                        _ => {continue}
-                    };
-                    knowledge_synonyms.push((vec![Inline::Str(name.clone())], scope.unwrap_or("".to_string())));
-                    }
-                }
-                _ => {continue}
+/// Parses a knowledge base from 
+/// the metadata of a pandoc document.
+pub fn parse_knowledge_base(meta : &BTreeMap<String, MetaValue>) -> KnowledgeBase {
+    let entries = meta.get("knowledges").and_then(|x| parse_knowledge_entries(&*x));
+    if let Some(forward) = entries {
+        let mut canonize = HashMap::new();
+        for (i,entry) in forward.iter().enumerate() {
+            let id = KnowledgeId(i as u16);
+            for syn in &entry.synonyms {
+                canonize.insert(syn.clone(), id);
             }
         }
-        ctx.knowledge_forward.insert(label.clone(), KnowledgeEntry { label, synonyms: knowledge_synonyms });
-        for (synonym, scope) in knowledge_synonyms {
-            ctx.knowledge_backward.insert(format!("{:?}::scope::{}", synonym, scope), label.clone());
-        }
+        KnowledgeBase { forward, canonize }
+    } else {
+        KnowledgeBase { forward: vec![], canonize: HashMap::new() }
     }
 }

@@ -1,76 +1,56 @@
-use pandoc_ast::{Block, Inline, MutVisitor};
-use std::collections::{HashMap, HashSet};
+use pandoc_ast::{Inline, MutVisitor};
+use pandoc_ast::MetaValue;
+use std::collections::BTreeMap;
 use std::io::{self, Read, Write};
 
-/// Ultimately, perform all the computations in this preprocessor, even for LaTeX output,
-/// so that we have a "one pass compilation" of the document for LaTeX, to speed up the
-/// view time. Note that for tikz pictures, this is irrelevant because we would have
-/// to parse them to get proper cross-references.
-///
-/// Better Figures.
-///
-/// - parse ![caption](url){.figure} to add it to the figures list
-/// - allow to use SVG or TIKZ code directly in the document
-///     -> for tikz, in latex, this is just plain latex code
-///     -> in other formats, collect all the latex codes, and compile
-///     a standalone latex document with the tikz code to get a pdf
-///     of the image, that is then rasterized into a low-res png.
-///
-/// Better Tables?
-///
-/// - TODO.
-///
-/// Better Algorithms.
-///
-/// - parse ```{=name .algorithm}``` to add it to the list of algorithms,
-///   and create a nicely formatted algorithm environment in LaTeX.
-///
-/// Better Macros.
-///
-/// -> for the moment, we will also use the "standalone" compilation of the math components
-/// to get png images of the macros. This is way simpler.
-///
-/// Checking.
-///
-/// - check that every theorem has a proof (or proof sketch): provide the list of theorems without proofs
-/// - check that knowledges are introduced before they are used.
-/// - check for consistency in the references.
-/// - provide an estimated number of pages.
-///
-use lipics_filter::polyreg::split_vec;
+use lipics_filter::knowledges::{KnowledgeResolver, span_to_knowledge, parse_knowledge_base,
+knowledge_to_latex, knowledge_to_fast_latex, knowledge_to_pandoc };
+use lipics_filter::utils;
 
-/// A proof kind in the lipics format.
-/// Proof is a direct proof, that should be shown
-/// Sketch is a proof sketch
-#[derive(Debug)]
-enum ProofKind {
-    Proof,
-    Sketch,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OutputMode {
+    Latex,
+    FastLatex,
+    Pandoc,
 }
 
-/// Proof status in the lipics format.
-/// Either it is important (main body)
-/// or should be hidden (appendix / details)
-#[derive(Debug)]
-enum ProofStatus {
-    Important,
-    Hidden,
+struct MyVisitor {
+    kdb: KnowledgeResolver,
+    mode: OutputMode,
 }
 
-/// A proof in the lipics format
-/// proof kind = "proof" | "proofof" | "sketch"
-/// proof body = block+
-#[derive(Debug)]
-struct Proof {
-    title: Option<Vec<Inline>>,
-    status: ProofStatus,
-    kind: ProofKind,
-    label: Option<String>,
-    body: Vec<Block>,
-    classes: HashSet<String>,
-    keyvals: HashMap<String, String>,
+impl MutVisitor for MyVisitor {
+    fn visit_inline(&mut self, inline: &mut Inline) {
+        if self.mode == OutputMode::Pandoc {
+            if let Some(knowledge) = span_to_knowledge(inline) {
+                *inline = knowledge_to_pandoc(&mut self.kdb, knowledge);
+            }
+        } 
+        self.walk_inline(inline);
+    }
+
+    fn visit_vec_inline(&mut self, inlines: &mut Vec<Inline>) {
+        if self.mode != OutputMode::Pandoc {
+            eprintln!("Converting inlines");
+            let mut new_inlines = vec![];
+            for inline in inlines.iter_mut() {
+                if let Some(knowledge) = span_to_knowledge(inline) {
+                    if self.mode == OutputMode::Latex {
+                        new_inlines.extend(knowledge_to_latex(knowledge));
+                    } else if self.mode == OutputMode::FastLatex {
+                        new_inlines.extend(knowledge_to_fast_latex(&mut self.kdb, knowledge));
+                    }
+                } else {
+                    new_inlines.push(inline.clone());
+                }
+            }
+            *inlines = new_inlines;
+        } 
+        self.walk_vec_inline(inlines);
+    }
 }
 
+/* 
 impl MutVisitor for MyVisitor {
     fn visit_vec_block(&mut self, blocks: &mut Vec<Block>) {
         let mut new_blocks = vec![];
@@ -98,16 +78,75 @@ impl MutVisitor for MyVisitor {
         self.walk_vec_inline(inlines);
     }
 }
+*/
+
+#[derive(Debug)]
+struct PandocLipics {
+    mode:  Option<OutputMode>,
+    debug: bool,
+}
+
+#[derive(Debug)]
+struct Cli {
+    format: Option<String>,
+}
+
+fn parse_pandoc_lipics(meta: &BTreeMap<String, MetaValue>) -> PandocLipics {
+    let mode = {
+        let mode_m : Option<String> = utils::meta_deep_get(meta, "pandoc-lipics.mode").and_then(|x| utils::meta_to_string(&x));
+        eprintln!("{:?}", mode_m);
+        if let Some(s) = mode_m {
+            if s == "latex" {
+                Some(OutputMode::Latex)
+            } else if s == "fast-latex" {
+                Some(OutputMode::FastLatex)
+            } else if s == "pandoc" {
+                Some(OutputMode::Pandoc)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }; 
+
+    let debug = utils::meta_deep_get(meta, "pandoc-lipics.debug").map(|_| true).unwrap_or(false);
+
+    PandocLipics {
+        mode, debug
+    }
+}
+
 
 fn main() {
     let mut s = String::new();
-    let mut visitor = MyVisitor {
-        ctx: Context::new(),
-    };
+    let format = std::env::args().nth(1);
+
     io::stdin().read_to_string(&mut s).unwrap();
     let s = pandoc_ast::filter(s, |mut pandoc| {
-        build_resolver(&mut visitor.ctx, &pandoc.meta);
+        let db  = parse_knowledge_base(&pandoc.meta);
+        let kdb = KnowledgeResolver::new(db);
+        let pandoc_lipics = parse_pandoc_lipics(&pandoc.meta);
+
+        // Sane defaults
+        // -> if the person did not ask for knowledge explicitly
+        // we do not use it.
+        eprintln!("{:?}", pandoc_lipics);
+        eprintln!("{:?}", format);
+        let mode = if let Some(f) = format.as_deref() {
+            match f {
+                "latex" => pandoc_lipics.mode.unwrap_or(OutputMode::Pandoc),
+                _ => OutputMode::Pandoc,
+            }
+        } else {
+            OutputMode::Pandoc
+        };
+
+        eprintln!("Mode: {:?}", mode);
+        
+        let mut visitor = MyVisitor {  kdb, mode };
         visitor.walk_pandoc(&mut pandoc);
+        eprintln!("{:?}", visitor.kdb);
         pandoc
     });
     io::stdout().write(s.as_bytes()).unwrap();

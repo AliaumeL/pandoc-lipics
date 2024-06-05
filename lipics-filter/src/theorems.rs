@@ -12,6 +12,8 @@
 /// - allow to restate environments (thm-restate)
 use pandoc_ast::{Block, Inline};
 use std::collections::{HashMap, HashSet};
+use crate::polyreg;
+use crate::references::Anchor;
 
 /// Theorem type in the lipics format.
 /// We provide a few standard types
@@ -184,10 +186,6 @@ fn theorem_to_latex(thm: Theorem) -> Vec<Block> {
 struct Context {
     theorem_counter: u32,
     label_counter: u32,
-    // knowledge-forward  : hash -> knowledge
-    // knowledge-backward : hash -> hash  (hash of a plain text to the hash of the knowledge)
-    knowledge_forward: HashMap<String, KnowledgeEntry>,
-    knowledge_backward: HashMap<String, String>,
     //
     // references
     theorems: HashMap<String, Anchor>,
@@ -203,8 +201,6 @@ impl Context {
             theorem_counter: 0,
             label_counter: 0,
             theorems: HashMap::new(),
-            knowledge_forward: HashMap::new(),
-            knowledge_backward: HashMap::new(),
         }
     }
 
@@ -240,7 +236,7 @@ fn block_to_theorem(ctx: &mut Context, block: Block) -> Option<Theorem> {
                 })
                 .collect();
 
-            let (before, mut after) = split_vec(decorated);
+            let (before, mut after) = polyreg::split_vec(decorated);
 
             if !before.is_empty() {
                 statement = before;
@@ -306,4 +302,72 @@ fn block_to_theorem(ctx: &mut Context, block: Block) -> Option<Theorem> {
         }
         _ => None,
     }
+}
+
+/// Ultimately, perform all the computations in this preprocessor, even for LaTeX output,
+/// so that we have a "one pass compilation" of the document for LaTeX, to speed up the
+/// view time. Note that for tikz pictures, this is irrelevant because we would have
+/// to parse them to get proper cross-references.
+///
+/// Better Figures.
+///
+/// - parse ![caption](url){.figure} to add it to the figures list
+/// - allow to use SVG or TIKZ code directly in the document
+///     -> for tikz, in latex, this is just plain latex code
+///     -> in other formats, collect all the latex codes, and compile
+///     a standalone latex document with the tikz code to get a pdf
+///     of the image, that is then rasterized into a low-res png.
+///
+/// Better Tables?
+///
+/// - TODO.
+///
+/// Better Algorithms.
+///
+/// - parse ```{=name .algorithm}``` to add it to the list of algorithms,
+///   and create a nicely formatted algorithm environment in LaTeX.
+///
+/// Better Macros.
+///
+/// -> for the moment, we will also use the "standalone" compilation of the math components
+/// to get png images of the macros. This is way simpler.
+///
+/// Checking.
+///
+/// - check that every theorem has a proof (or proof sketch): provide the list of theorems without proofs
+/// - check that knowledges are introduced before they are used.
+/// - check for consistency in the references.
+/// - provide an estimated number of pages.
+///
+
+/// A proof kind in the lipics format.
+/// Proof is a direct proof, that should be shown
+/// Sketch is a proof sketch
+#[derive(Debug)]
+enum ProofKind {
+    Proof,
+    Sketch,
+}
+
+/// Proof status in the lipics format.
+/// Either it is important (main body)
+/// or should be hidden (appendix / details)
+#[derive(Debug)]
+enum ProofStatus {
+    Important,
+    Hidden,
+}
+
+/// A proof in the lipics format
+/// proof kind = "proof" | "proofof" | "sketch"
+/// proof body = block+
+#[derive(Debug)]
+struct Proof {
+    title: Option<Vec<Inline>>,
+    status: ProofStatus,
+    kind: ProofKind,
+    label: Option<String>,
+    body: Vec<Block>,
+    classes: HashSet<String>,
+    keyvals: HashMap<String, String>,
 }

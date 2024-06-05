@@ -12,7 +12,7 @@ use pandoc_ast::Inline;
 
 /// Possible anchors in the document
 #[derive(Debug)]
-enum AnchorKind {
+pub enum AnchorKind {
     Theorem,
     Lemma,
     Corollary,
@@ -33,7 +33,7 @@ enum AnchorKind {
 
 /// An anchor in the document
 #[derive(Debug)]
-struct Anchor {
+pub struct Anchor {
     label: String,
     title: Option<Vec<Inline>>,
     kind: AnchorKind,
@@ -41,7 +41,7 @@ struct Anchor {
 
 /// A reference in the document
 #[derive(Debug)]
-struct Reference {
+pub struct Reference {
     label: String,
     kind: AnchorKind,
 }
