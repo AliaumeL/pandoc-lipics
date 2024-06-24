@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.irif.fr/~alopez/ressources/schemas/knowledge.schema.json",
+  "title": "Knowledge",
+  "description": "A piece of knowledge, as understood in the Knowledge package for LaTeX",
+  "type": "object",
+  "required": ["synonyms"],
+  "properties": {
+    "notion": {
+      "type": "boolean",
+      "description": "Whether this knowledge is a notion",
+      "default": true
+    },
+    "name": {
+      "type": "string",
+      "description": "A display name for this knowledge"
+    },
+    "wikidata": {
+      "type": "string",
+      "description": "The Wikidata identifier for this knowledge"
+    },
+    "description": {
+      "type": "string",
+      "description": "A description of this knowledge"
+    },
+    "url": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "index": {
+      "type": "string",
+      "description": "How this knowledge should be indexed in a latex document."
+    },
+    "color": {
+      "type": "string",
+      "description": "A color to associate with this knowledge"
+    },
+    "display": {
+      "type": "array",
+      "description": "A list of display options for this knowledge",
+      "items": {
+        "type": "string",
+        "enum": ["italic", "bold", "md", "smallcaps", "lowercase", "uppercase"]
+      },
+      "uniqueItems": true
+    },
+    "placeholder-text": {
+      "type": "string",
+      "description": "Replace instances of the knowledge by this text"
+    },
+    "synonyms": {
+      "type": "array",
+      "description": "A list of expressions that refers to this knowledge",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "scope": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  }
+}

@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.irif.fr/~alopez/ressources/schemas/paper-meta.v0.1.0.schema.json",
+  "$defs": {
+    "ams-category": {
+      "oneOf": [
+        {
+          "const": "68Q01",
+          "description": "General topics in the theory of computing"
+        },
+        {
+          "const": "68Q70",
+          "description": "Algebraic theory of languages and automata"
+        },
+        { "const": "68Q45", "description": "Formal languages and automata" },
+        {
+          "const": "68Q60",
+          "description": "Specification and verification (program logics, model checking, etc.)"
+        },
+        {
+          "const": "68Q19",
+          "description": "Descriptive complexity and finite models"
+        },
+        {
+          "const": "68Q99",
+          "description": "None of the above, but in the section Theory of computing"
+        },
+        { "const": "03Bxx", "description": "General logic" },
+        { "const": "03B70", "description": "Logic in computer science" },
+        { "const": "03Cxx", "description": "Model theory" },
+        {
+          "const": "03C13",
+          "description": "Model theory of finite structures"
+        },
+        {
+          "const": "03Dxx",
+          "description": "Computability and recursion theory"
+        },
+        {
+          "const": "03D05",
+          "description": "Automata and formal grammars in connection with logical questions"
+        }
+      ]
+    },
+    "acm-category": {
+      "oneOf": [
+        { "const": "F.1", "description": "Theory of Computation" },
+        { "const": "F.1.1", "description": "Models of Computation" },
+        {
+          "const": "F.3.2",
+          "description": "Semantics of Programming Languages"
+        },
+        { "const": "F.4.1", "description": "Mathematical Logic" },
+        {
+          "const": "F.4.2",
+          "description": "Grammars and Other Rewriting Systems"
+        },
+        { "const": "F.4.3", "description": "Formal Languages" }
+      ]
+    },
+    "arxiv-category": {
+      "oneOf": [
+        {
+          "const": "cs.FL",
+          "description": "Formal Languages and Automata Theory"
+        },
+        { "const": "cs.GT", "description": "Computer Science and Game Theory" },
+        { "const": "cs.LO", "description": "Logic in Computer Science" },
+        { "const": "cs.PL", "description": "Programming Languages" }
+      ]
+    },
+    "author": {
+      "description": "A paper author (probably a researcher).",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "email": {
+              "type": "string",
+              "description": "The email of the author."
+            },
+            "webpage": {
+              "type": "string",
+              "description": "The webpage of the author."
+            },
+            "address": {
+              "type": "string",
+              "description": "The address of the author's office."
+            },
+            "orcid": {
+              "type": "string",
+              "description": "The ORCID profile of the author."
+            },
+            "affiliation": {
+              "type": "string",
+              "description": "The affiliation of the author (university / laboratory / company)."
+            }
+          },
+          "required": ["name"]
+        }
+      ]
+    }
+  },
+
+  "title": "Research Paper Metadata",
+  "description": "Basic metadata that helps indexing research papers.",
+  "type": "object",
+  "required": ["title", "author", "license"],
+
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The title of the paper."
+    },
+    "title-running": {
+      "type": "string",
+      "description": "The running title of the paper."
+    },
+    "author": {
+      "description": "The author(s) of the paper.",
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "The authors of the paper.",
+          "items": { "$ref": "#/$defs/author" }
+        },
+        { "$ref": "#/$defs/author" }
+      ]
+    },
+    "author-running": {
+      "type": "string",
+      "description": "The running author of the paper."
+    },
+    "abstract": {
+      "type": "string",
+      "description": "The abstract of the paper."
+    },
+    "keywords": {
+      "type": "array",
+      "description": "Keywords that describe the paper.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "doi": {
+      "description": "The DOI(s) of the paper.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "eprint": {
+      "type": "string",
+      "description": "The eprint of the paper."
+    },
+    "url": {
+      "type": "string",
+      "description": "The URL of the paper."
+    },
+    "arxiv-category": {
+      "oneOf": [
+        { "$ref": "#/$defs/arxiv-category" },
+        { "type": "array", "items": { "$ref": "#/$defs/arxiv-category" } }
+      ]
+    },
+    "ams-category": {
+      "oneOf": [
+        { "$ref": "#/$defs/ams-category" },
+        { "type": "array", "items": { "$ref": "#/$defs/ams-category" } }
+      ]
+    },
+    "acm-category": {
+      "oneOf": [
+        { "$ref": "#/$defs/acm-category" },
+        { "type": "array", "items": { "$ref": "#/$defs/acm-category" } }
+      ]
+    },
+    "related-versions": {
+      "type": "array",
+      "description": "Related versions of the paper.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "enum": ["Preprint", "Data"] },
+          "url": { "type": "string" },
+          "text": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["url"]
+      }
+    },
+    "filetype": {
+      "enum": ["pdf", "html", "docx"],
+      "description": "The type of the file."
+    },
+    "pages": {
+      "type": "integer",
+      "description": "The number of pages of the paper.",
+      "minimum": 0
+    },
+    "funding": {
+      "description": "Organizations that funded the research.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "license": {
+      "description": "The license of the paper.",
+      "enum": ["CC-BY-SA 4.0"]
+    }
+  }
+}
